@@ -266,31 +266,60 @@ export default function App() {
     }, 0),
   }));
 
-  /* ── Auto-fetch ── */
+  /* ── J-Quants API fetch ── */
   const fetchStockData = async () => {
     if (!stocks.length) return;
-    setFetching(true); setFetchMsg("🔍 株価・配当情報を検索中…");
-    const codeList = stocks.map(s => `${s.code}(${s.name})`).join("、");
+    setFetching(true); setFetchMsg("🔍 株価・配当情報を取得中…");
+    const apiKey = import.meta.env.VITE_JQUANTS_API_KEY;
+    if (!apiKey) { setFetchMsg("⚠️ APIキーが設定されていません"); setFetching(false); return; }
     try {
-      const res = await fetch("https://api.anthropic.com/v1/messages", {
+      // Step1: リフレッシュトークン取得
+      const authRes = await fetch("https://api.jquants.com/v1/token/auth_user", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          model: "claude-sonnet-4-20250514", max_tokens: 1000,
-          tools: [{ type: "web_search_20250305", name: "web_search" }],
-          messages: [{ role: "user", content: `以下の日本株について、web検索で最新の株価（円）と年間配当金（1株あたり・円）を調べてください。JSONのみ返してください（説明文・コードブロック・バッククォート不要）。形式: [{"code":"7203","currentPrice":3520,"annualDividend":120}] 銘柄: ${codeList}` }]
-        })
+        body: JSON.stringify({ refreshtoken: apiKey })
       });
-      const data = await res.json();
-      const text = data.content?.filter(b => b.type === "text").map(b => b.text).join("") || "";
-      const match = text.match(/\[[\s\S]*?\]/);
-      if (!match) throw new Error("no json");
-      const fetched = JSON.parse(match[0]);
-      const updated = stocks.map(s => {
-        const f = fetched.find(x => x.code === s.code);
-        return f ? { ...s, currentPrice: f.currentPrice || s.currentPrice, annualDividend: f.annualDividend || s.annualDividend, lastUpdated: new Date().toLocaleDateString("ja-JP") } : s;
+      const authData = await authRes.json();
+      const idToken = authData.idToken;
+      if (!idToken) throw new Error("auth failed");
+
+      // Step2: 各銘柄の株価・配当を取得
+      const today = new Date().toISOString().slice(0, 10).replace(/-/g, "");
+      const results = await Promise.allSettled(stocks.map(async s => {
+        // 株価取得
+        const priceRes = await fetch(
+          `https://api.jquants.com/v1/prices/daily_quotes?code=${s.code}&date=${today}`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        const priceData = await priceRes.json();
+        const quote = priceData.daily_quotes?.[0];
+        const currentPrice = quote?.Close || quote?.AdjustmentClose || s.currentPrice;
+
+        // 配当情報取得
+        const divRes = await fetch(
+          `https://api.jquants.com/v1/fins/dividend?code=${s.code}`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        const divData = await divRes.json();
+        const divList = divData.dividend || [];
+        // 直近の年間配当を合計
+        const thisYear = new Date().getFullYear().toString();
+        const yearDivs = divList.filter(d => d.RecordDate?.startsWith(thisYear));
+        const annualDividend = yearDivs.length > 0
+          ? yearDivs.reduce((a, d) => a + (d.DividendPayableDate ? (Number(d.ForecastDividend) || 0) : 0), 0) || s.annualDividend
+          : s.annualDividend;
+
+        return { code: s.code, currentPrice, annualDividend };
+      }));
+
+      const updated = stocks.map((s, i) => {
+        const r = results[i];
+        if (r.status === "fulfilled") {
+          return { ...s, currentPrice: r.value.currentPrice || s.currentPrice, annualDividend: r.value.annualDividend || s.annualDividend, lastUpdated: new Date().toLocaleDateString("ja-JP") };
+        }
+        return s;
       });
       await saveStocks(updated); setFetchMsg("✅ 更新完了！");
-    } catch { setFetchMsg("⚠️ 取得に失敗しました"); }
+    } catch (e) { setFetchMsg("⚠️ 取得に失敗しました: " + e.message); }
     setFetching(false); setTimeout(() => setFetchMsg(""), 5000);
   };
 
