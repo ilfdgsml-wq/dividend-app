@@ -325,6 +325,39 @@ export default function App() {
   /* ── CSV import ── */
   const handleImport = () => {
     const lines = csvText.trim().split("\n");
+
+    // SBI証券フォーマット検出
+    // ヘッダー行: 銘柄コード,銘柄名,保有株数,売却注文中,取得単価,現在値,取得金額,評価額,評価損益
+    const isSBI = lines.some(l => l.includes("銘柄コード") && l.includes("保有株数") && l.includes("取得単価"));
+
+    if (isSBI) {
+      // SBI証券形式: ヘッダー行を探してそこから読み込む
+      const headerIdx = lines.findIndex(l => l.includes("銘柄コード") && l.includes("保有株数"));
+      const dataLines = lines.slice(headerIdx + 1);
+      const parsed = dataLines.map(line => {
+        const c = parseCSVLine(line);
+        // 銘柄コードが数字4桁でないものはスキップ（合計行など）
+        const code = c[0]?.replace(/"/g, "").trim();
+        if (!code || !/^\d{4}$/.test(code)) return null;
+        const name           = c[1]?.replace(/"/g, "").trim() || "";
+        const shares         = Number(c[2]?.replace(/"/g, "").trim()) || 0;
+        const acquisitionPrice = Number(c[4]?.replace(/"/g, "").trim()) || 0;
+        const currentPrice   = Number(c[5]?.replace(/"/g, "").trim()) || acquisitionPrice;
+        return {
+          id: uid(), code, name, shares,
+          acquisitionPrice, currentPrice,
+          annualDividend: 0,   // SBIには配当情報がないので0で登録、後で株価更新で取得
+          dividendMonths: [3, 9],
+          sector: "",
+          lastUpdated: null,
+        };
+      }).filter(Boolean);
+      saveStocks([...stocks, ...parsed]);
+      setCsvText(""); setModal(null);
+      return;
+    }
+
+    // 通常フォーマット（アプリ独自CSV）
     const start = lines[0].toLowerCase().includes("コード") ? 1 : 0;
     const parsed = lines.slice(start).map(line => {
       const c = parseCSVLine(line);
