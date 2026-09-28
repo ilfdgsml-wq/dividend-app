@@ -1,0 +1,21 @@
+// ゲームロジックの公開API。UI（フェーズ2ではサーバー）はここからだけ import する。
+
+export * from './types.ts'
+export * from './constants.ts'
+export { applyAction } from './applyAction.ts'
+export { createGame, type GameConfig } from './createGame.ts'
+export { viewFor, type PlayerView, type PublicPlayer } from './view.ts'
+export { seededRng } from './rng.ts'
+export { TOPOLOGY, toPixel, type HexInfo, type VertexInfo, type EdgeInfo } from './board/topology.ts'
+export type { BoardType } from './board/generate.ts'
+export { total, hasAtLeast } from './resources.ts'
+export {
+  legalSettlementVertices,
+  legalRoadEdges,
+  legalCityVertices,
+  piecesLeft,
+} from './rules/placement.ts'
+export { tradeRates, portsOf } from './rules/ports.ts'
+export { victoryPoints, pointBreakdown } from './rules/victory.ts'
+export { robberTargets } from './actions/robber.ts'
+export { devCardError } from './actions/devCards.ts'
