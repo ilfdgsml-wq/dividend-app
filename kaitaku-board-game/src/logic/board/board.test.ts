@@ -4,7 +4,7 @@ import { seededRng } from '../rng.ts'
 import { EDGE_COUNT, HEX_COUNT, TOPOLOGY, VERTEX_COUNT } from './topology.ts'
 import { generateBeginnerBoard, generateRandomBoard, redNumbersSeparated } from './generate.ts'
 
-const sorted = <T,>(a: T[]) => a.slice().sort()
+const sorted = <T>(a: T[]) => a.slice().sort()
 
 describe('topology', () => {
   it('タイル19・交差点54・辺72・海岸の辺30', () => {

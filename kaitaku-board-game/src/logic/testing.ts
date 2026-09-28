@@ -6,16 +6,7 @@ import { TOPOLOGY, edgeBetween, otherEnd } from './board/topology.ts'
 import type { BoardType } from './board/generate.ts'
 import { counts } from './resources.ts'
 import { seededRng } from './rng.ts'
-import type {
-  Action,
-  BuildingKind,
-  EdgeId,
-  GameState,
-  PlayerId,
-  ResourceCounts,
-  Rng,
-  VertexId,
-} from './types.ts'
+import type { Action, BuildingKind, EdgeId, GameState, PlayerId, ResourceCounts, Rng, VertexId } from './types.ts'
 
 export const COLORS = ['#d33', '#36c', '#e90', '#393']
 

@@ -111,7 +111,7 @@ describe('applyAction の純粋性', () => {
 
 /** 合法手からランダムに選んで進める簡易プレイヤー（通しプレイの検証用） */
 function randomLegalAction(s: GameState, rng: Rng): { action: Action; player: number } {
-  const pick = <T,>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
+  const pick = <T>(xs: T[]) => xs[Math.floor(rng() * xs.length)]
   const p = s.currentPlayer
   const phase = s.phase
   switch (phase.type) {

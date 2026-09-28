@@ -1,6 +1,6 @@
 # 開拓ボードゲーム — 設計案（フェーズ1）
 
-> ステータス：**提案中（未承認）**。確認が取れるまで実装には入らない。
+> ステータス：**承認済み・フェーズ1実装済み**（8章の確認事項はすべて提案どおりで了承）。
 > ルールの正は `docs/SPEC.md`。この文書は「どう作るか」だけを扱う。
 
 ---
@@ -44,15 +44,19 @@ kaitaku-board-game/
    │  │  ├─ ports.ts         各プレイヤーの交換レート
    │  │  └─ victory.ts       点数計算・勝利判定
    │  ├─ view.ts             viewFor(state, viewer)：非公開情報の伏せ字化
+   │  ├─ testing.ts          テスト用の補助関数
    │  └─ **/*.test.ts        Vitest（ロジックと同じ場所に置く）
    └─ ui/
       ├─ main.tsx
-      ├─ App.tsx             画面切替（開始画面 / 対戦 / 受け渡し / 結果）
-      ├─ useLocalGame.ts     useReducer で applyAction を包む。乱数はここで生成して渡す
+      ├─ App.tsx             画面切替（開始画面 / 対戦）
+      ├─ StartScreen.tsx     人数・名前・盤面の選択、続きから
+      ├─ GameScreen.tsx      対戦画面。applyAction を呼ぶ（乱数はここで Math.random を渡す）
+      ├─ HandoffScreen.tsx   「端末を渡してください」画面
       ├─ storage.ts          localStorage への自動保存・再開
-      ├─ board/              BoardSvg, HexTile, NumberToken, PortMarker, VertexSpot, EdgeSpot, Robber
-      ├─ panels/             PlayerList, Hand, ActionBar, Log
-      ├─ dialogs/            TradeDialog, BankTradeDialog, DiscardDialog, DevCardDialog, StealDialog
+      ├─ labels.ts           日本語名・絵文字・ログ文言
+      ├─ board/              BoardSvg（タイル・数字・港・道・建物・盗賊・タップ対象）、描画座標
+      ├─ panels/             PlayerList, Hand, LogPanel
+      ├─ dialogs/            Trade/Respond, BankTrade, Discard, DevCard, Steal, Menu, GameOver
       └─ styles.css
 ```
 
@@ -246,10 +250,12 @@ function applyAction(state: GameState, action: Action, playerId: PlayerId, rng: 
 
 function viewFor(state: GameState, viewer: PlayerId | null): PlayerView; // 他人の手札・山札を伏せる
 // UI 向けセレクタ（ロジックと同じ判定を使う）
-function legalVertices(state, playerId): VertexId[];
-function legalEdges(state, playerId): EdgeId[];
-function tradeRates(state, playerId): Record<Resource, 2 | 3 | 4>;
-function victoryPoints(state, playerId, { includeHidden }): number;
+function legalSettlementVertices(state, playerId, requireRoad): VertexId[];
+function legalRoadEdges(state, playerId, setupVertex?): EdgeId[];
+function legalCityVertices(state, playerId): VertexId[];
+function tradeRates(state, playerId): Record<Resource, number>;   // 2 / 3 / 4
+function victoryPoints(state, playerId, includeHidden): number;
+function devCardError(state, playerId, type): string | null;      // 使えない理由
 ```
 
 - **乱数は第4引数で渡す**（仕様の `applyAction(state, action, playerId)` に `rng` を足した形）。フェーズ1ではUI側で `Math.random` を渡し、テストではシード付き乱数や固定列を渡す。フェーズ2ではサーバーが `crypto` 由来の乱数を渡す。

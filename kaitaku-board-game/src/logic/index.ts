@@ -9,13 +9,8 @@ export { seededRng } from './rng.ts'
 export { TOPOLOGY, toPixel, type HexInfo, type VertexInfo, type EdgeInfo } from './board/topology.ts'
 export type { BoardType } from './board/generate.ts'
 export { total, hasAtLeast } from './resources.ts'
-export {
-  legalSettlementVertices,
-  legalRoadEdges,
-  legalCityVertices,
-  piecesLeft,
-} from './rules/placement.ts'
+export { legalSettlementVertices, legalRoadEdges, legalCityVertices, piecesLeft } from './rules/placement.ts'
 export { tradeRates, portsOf } from './rules/ports.ts'
-export { victoryPoints, pointBreakdown } from './rules/victory.ts'
+export { victoryPoints, pointBreakdown, type PointBreakdown } from './rules/victory.ts'
 export { robberTargets } from './actions/robber.ts'
 export { devCardError } from './actions/devCards.ts'

@@ -72,7 +72,9 @@ describe('海上交易', () => {
     setHand(s, 1, { wood: 4 })
     expect(actError(s, { type: 'bankTrade', give: counts({ wood: 4 }), get: counts({ ore: 1 }) }, 1)).toMatch('手番')
     s.phase = { type: 'preRoll' }
-    expect(actError(s, { type: 'bankTrade', give: counts({ wood: 4 }), get: counts({ ore: 1 }) }, 0)).toMatch('サイコロを振る前')
+    expect(actError(s, { type: 'bankTrade', give: counts({ wood: 4 }), get: counts({ ore: 1 }) }, 0)).toMatch(
+      'サイコロを振る前',
+    )
   })
 
   it('建てたばかりの開拓地の港もその手番中に使える', () => {
@@ -80,7 +82,11 @@ describe('海上交易', () => {
     const port = s.ports.find((p) => p.kind === 'any')!
     const [v, w] = TOPOLOGY.edges[port.edge].vertices
     const inland = TOPOLOGY.vertices[w].edges.find((e) => e !== port.edge)!
-    put(s, TOPOLOGY.edges[inland].vertices.find((x) => x !== w)!, 0)
+    put(
+      s,
+      TOPOLOGY.edges[inland].vertices.find((x) => x !== w)!,
+      0,
+    )
     s.roads[inland] = 0
     s.roads[port.edge] = 0
     setHand(s, 0, { wood: 4, brick: 1, sheep: 1, wheat: 1 })

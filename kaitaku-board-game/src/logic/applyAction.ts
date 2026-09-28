@@ -2,13 +2,7 @@ import { placeSetupRoad, placeSetupSettlement } from './actions/setup.ts'
 import { rollDice } from './actions/dice.ts'
 import { discard, moveRobber, steal } from './actions/robber.ts'
 import { buildCity, buildRoad, buildSettlement, buyDevCard } from './actions/build.ts'
-import {
-  playKnight,
-  placeFreeRoad,
-  playMonopoly,
-  playRoadBuilding,
-  playYearOfPlenty,
-} from './actions/devCards.ts'
+import { playKnight, placeFreeRoad, playMonopoly, playRoadBuilding, playYearOfPlenty } from './actions/devCards.ts'
 import { bankTrade, cancelTrade, confirmTrade, counterTrade, proposeTrade, respondTrade } from './actions/trade.ts'
 import { endTurn } from './actions/turn.ts'
 import { checkVictory } from './rules/victory.ts'

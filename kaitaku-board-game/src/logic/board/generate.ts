@@ -47,6 +47,7 @@ export function generateRandomBoard(rng: Rng): BoardLayout {
 }
 
 // 初心者用の固定配置（自作）。HexId 順 = 上の行から、各行は左から。砂漠は中央
+// prettier-ignore
 const BEGINNER_TILES: [Terrain, number | null][] = [
   ['mountains', 10], ['pasture', 2], ['forest', 9],
   ['fields', 12], ['hills', 6], ['pasture', 4], ['hills', 10],

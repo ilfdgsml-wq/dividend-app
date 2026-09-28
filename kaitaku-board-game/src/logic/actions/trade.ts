@@ -15,7 +15,12 @@ function termsError(give: ResourceCounts, get: ResourceCounts): string | null {
   return null
 }
 
-export function bankTrade(state: GameState, player: PlayerId, give: ResourceCounts, get: ResourceCounts): string | null {
+export function bankTrade(
+  state: GameState,
+  player: PlayerId,
+  give: ResourceCounts,
+  get: ResourceCounts,
+): string | null {
   const err = notYourTurn(state, player) ?? wrongPhase(state, 'main') ?? termsError(give, get)
   if (err) return err
   const rates = tradeRates(state, player)
@@ -34,7 +39,12 @@ export function bankTrade(state: GameState, player: PlayerId, give: ResourceCoun
   return null
 }
 
-export function proposeTrade(state: GameState, player: PlayerId, give: ResourceCounts, get: ResourceCounts): string | null {
+export function proposeTrade(
+  state: GameState,
+  player: PlayerId,
+  give: ResourceCounts,
+  get: ResourceCounts,
+): string | null {
   const err = notYourTurn(state, player) ?? wrongPhase(state, 'main') ?? termsError(give, get)
   if (err) return err
   if (!hasAtLeast(state.players[player].resources, give)) return '手札が足りません'
@@ -65,7 +75,12 @@ export function respondTrade(state: GameState, player: PlayerId, accept: boolean
   return null
 }
 
-export function counterTrade(state: GameState, player: PlayerId, give: ResourceCounts, get: ResourceCounts): string | null {
+export function counterTrade(
+  state: GameState,
+  player: PlayerId,
+  give: ResourceCounts,
+  get: ResourceCounts,
+): string | null {
   const err = responderError(state, player) ?? termsError(give, get)
   if (err) return err
   if (!hasAtLeast(state.players[player].resources, get)) return '手札が足りません'

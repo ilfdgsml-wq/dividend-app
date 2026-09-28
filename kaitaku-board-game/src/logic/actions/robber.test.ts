@@ -71,7 +71,9 @@ describe('7 が出たとき', () => {
     expect(actError(s, { type: 'discard', resources: counts({ wood: 5 }) }, 1)).toMatch('ちょうど4枚')
     expect(actError(s, { type: 'discard', resources: counts({ sheep: 4 }) }, 1)).toMatch('持っていない')
     expect(actError(s, { type: 'discard', resources: counts({ wood: 4 }) }, 0)).toMatch('捨てる必要がありません')
-    expect(actError(s, { type: 'discard', resources: { ...counts(), wood: -1, ore: 5 } }, 1)).toMatch('正しくありません')
+    expect(actError(s, { type: 'discard', resources: { ...counts(), wood: -1, ore: 5 } }, 1)).toMatch(
+      '正しくありません',
+    )
   })
 
   it('盗賊は今と別のタイルに必ず移動する（砂漠も可）', () => {

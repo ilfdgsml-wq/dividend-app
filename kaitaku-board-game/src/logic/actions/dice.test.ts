@@ -45,7 +45,9 @@ describe('資源産出', () => {
 
   it('1つの交差点が複数の産出タイルに接していれば、それぞれから受け取る', () => {
     const v = TOPOLOGY.vertices.find((x) => x.hexes.length === 3)!
-    const s = board(v.hexes.map((hex, i) => ({ hex, terrain: (['forest', 'fields', 'mountains'] as Terrain[])[i], number: 8 })))
+    const s = board(
+      v.hexes.map((hex, i) => ({ hex, terrain: (['forest', 'fields', 'mountains'] as Terrain[])[i], number: 8 })),
+    )
     put(s, v.id, 2, 'city')
     expect(computeProduction(s, 8).gains[2]).toEqual(counts({ wood: 2, wheat: 2, ore: 2 }))
   })
