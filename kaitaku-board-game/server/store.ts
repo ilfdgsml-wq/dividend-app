@@ -27,6 +27,8 @@ export interface GameStore {
   addSeat(roomId: string, seat: SeatInfo): Promise<boolean>
   removeSeat(roomId: string, userId: string): Promise<void>
   loadGame(roomId: string): Promise<GameRecord | null>
+  /** そのユーザーから見た状態（ゲーム開始前・参加していなければ null） */
+  getView(roomId: string, userId: string): Promise<PlayerView | null>
   /**
    * 状態と各プレイヤーの見え方を保存する。
    * expectedVersion = null は新規作成。読み込んだ後に他の操作で更新されていたら false（呼び出し側でやり直す）

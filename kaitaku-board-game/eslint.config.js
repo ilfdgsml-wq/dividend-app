@@ -5,7 +5,7 @@ import reactHooks from 'eslint-plugin-react-hooks'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist', 'api']),
+  globalIgnores(['dist', 'supabase/functions']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [js.configs.recommended, tseslint.configs.recommended, reactHooks.configs.flat.recommended],

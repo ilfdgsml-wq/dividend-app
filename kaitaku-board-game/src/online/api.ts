@@ -1,11 +1,16 @@
-import type { ServerRequest, ServerResponse } from './protocol.ts'
+import { PLAYER_KEY_HEADER, type ServerRequest, type ServerResponse } from './protocol.ts'
 
-/** サーバー（/api/game）に操作を送る */
-export async function postGame(req: ServerRequest, token: string): Promise<ServerResponse> {
+/** サーバーに操作を送る。サーバーは失敗しても { ok: false, error } を JSON で返す */
+export async function postGame(
+  endpoint: string,
+  req: ServerRequest,
+  playerKey: string,
+  headers: Record<string, string> = {},
+): Promise<ServerResponse> {
   try {
-    const res = await fetch('/api/game', {
+    const res = await fetch(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      headers: { 'Content-Type': 'application/json', [PLAYER_KEY_HEADER]: playerKey, ...headers },
       body: JSON.stringify(req),
     })
     const body = (await res.json().catch(() => null)) as ServerResponse | null

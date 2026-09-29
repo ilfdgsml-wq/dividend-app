@@ -17,8 +17,7 @@ export function OnlineStart({ onEnterRoom }: { onEnterRoom: (roomId: string) => 
       <section className="panel">
         <h2>友達とオンラインで遊ぶ</h2>
         <p className="muted">
-          オンライン対戦は、公開用サイト（Vercel）で Supabase の設定をすると使えるようになります。手順は README
-          を見てください。
+          オンライン対戦の接続先（Supabase）がまだ設定されていません。設定が済むと、ここから部屋を作れるようになります。
         </p>
       </section>
     )

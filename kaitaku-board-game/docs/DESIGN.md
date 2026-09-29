@@ -310,38 +310,45 @@ function devCardError(state, playerId, type): string | null;      // 使えな�
 
 ## 9. フェーズ2：オンライン対戦
 
-### 9.1 構成と、SPEC からの変更点
+### 9.1 構成
 
-- **サーバー処理は Vercel の関数（`/api/game`）で動かす**（SPEC 15章の「Supabase Edge Function」から変更）。
-  - 理由：Edge Function はコマンドでのデプロイが毎回必要だが、Vercel ならリポジトリへのプッシュだけでフロントと一緒に更新される。
-  - サーバー処理（`server/handler.ts`）は保存先（`GameStore`）と乱数を受け取る形にしてあり、Edge Function に移す場合も入口を差し替えるだけで済む。
-- Vercel は `api/game.js` をそのまま関数として動かす。これは `server/vercel.ts` を入口に、ゲームロジックと Supabase のライブラリを1ファイルにまとめたもの（`npm run build:api` で生成し、コミットする）。
-- データの保存と同期は Supabase（匿名ログイン・Postgres・RLS・Realtime）。
+- サーバー処理は **Supabase Edge Function `game`**（SPEC 15章どおり）。`server/edge.ts` を入口に、ゲームロジックとサーバー処理を
+  `supabase/functions/game/index.ts` の1ファイルにまとめる（`npm run build:edge`。Supabase のライブラリだけ `npm:` 指定で読み込む）。
+- サーバー処理（`server/handler.ts`）は保存先（`GameStore`）・乱数・通知を受け取る形で、本番（Supabase）と開発用の模擬サーバー（メモリ）で同じコードを使う。
+- フロントは Vercel。必要なのは公開してよい Supabase の URL と publishable key だけで、`.env.production` に書いてコミットする。
 
-### 9.2 テーブル（`supabase/schema.sql`）
+### 9.2 SPEC からの変更点：ログインを使わない
 
-| テーブル | 内容 | ブラウザから |
-|---|---|---|
-| `rooms` | 部屋コード・ホスト・状態（lobby / playing / finished）・盤面の種類 | 参加者だけ読める |
-| `room_players` | 席順（= 手番順）と名前 | 参加者だけ読める |
-| `game_states` | 完全な状態（山札・全員の手札）と version、PlayerId → ユーザーID | 読めない |
-| `player_views` | `viewFor(state, 席)` の結果（他人の手札は伏せ字） | **本人の行だけ**読める |
+- SPEC 15章の「匿名ログイン」「RLS で本人だけ読める」の代わりに、**ブラウザごとの秘密のキー**（256ビットの乱数。localStorage に保存）を
+  `x-player-key` ヘッダーで送り、サーバーはその **SHA-256 をユーザーID** として使う。キーそのものはサーバーに保存しない。
+- 読み込みもすべて関数経由（`state` 操作）にし、テーブルはブラウザから一切アクセスできないようにした（RLS 有効・ポリシーなし・権限なし）。
+- 理由：Supabase 側で匿名ログインを有効にする手作業が不要になり、関数も JWT の検証（verify_jwt）なしで動かせる。
+  本人以外に手札が見えないこと・同じブラウザなら同じ席に戻れることは SPEC どおり。
 
-- 書き込みはすべてサーバーが Secret key で行う（ブラウザには書き込み権限を与えない）。
-- 状態の保存は `save_game` 関数で、`game_states` の更新と全員分の `player_views` の更新を1トランザクションで行う。
+### 9.3 テーブル（`supabase/schema.sql`）
+
+| テーブル | 内容 |
+|---|---|
+| `rooms` | 部屋コード・ホスト（ユーザーID）・状態（lobby / playing / finished）・盤面の種類 |
+| `room_players` | 席順（= 手番順）と名前 |
+| `game_states` | 完全な状態（山札・全員の手札）と version、PlayerId → ユーザーID |
+| `player_views` | `viewFor(state, 席)` の結果（他人の手札は伏せ字） |
+
+- 状態の保存は `save_game` 関数で、`game_states` と全員分の `player_views` を1トランザクションで更新する。
   `version` が読み込み時と違えば保存せず false を返し、サーバーは最新の状態で `applyAction` をやり直す（7の捨て札のように複数人が同時に操作しても正しく処理される）。
 - 各プレイヤーに配るログは新しい方から60件（`logStart` で元の位置を示す）。
 
-### 9.3 流れ
+### 9.4 流れ
 
-1. 部屋を作る：匿名ログイン → `create` → 6文字の部屋コード（読み間違えやすい 0/O・1/I を除く）。URL は `/?room=コード`。
+1. 部屋を作る：`create` → 6文字の部屋コード（読み間違えやすい 0/O・1/I を除く）。URL は `/?room=コード`。
 2. 参加：URL を開く → `peek` で部屋の概要を表示 → 名前を入れて `join`（空いている一番小さい席に座る。最大4人）。
 3. 開始：ホストが盤面を選んで `start`（2人以上）。席順どおりに `createGame`、スタートプレイヤーは乱数。
 4. 対戦：操作は `action` で送る。サーバーは参加者か・手番かを含めて `applyAction` で検証し、全員の見え方を保存する。
-   ブラウザは Realtime の通知で自分の部屋・参加者・見え方を読み直す（念のため15秒ごと・画面に戻ったときも読み直す）。
-5. 再接続：匿名ログインの情報はブラウザに残るので、同じURLを開けば同じ席に戻れる。
+5. 画面の更新：状態が変わる操作のあと、サーバーが Realtime Broadcast（チャンネル `room:部屋コード`、イベント `changed`）で中身なしの通知を送り、
+   ブラウザは `state` で自分の分を読み直す。念のため約10秒ごと・画面に戻ったときも読み直す。
+6. 再接続：キーはブラウザに残るので、同じURLを開けば同じ席に戻れる。
 
-### 9.4 画面
+### 9.5 画面
 
 - 対戦画面 `GameScreen` はホットシートとオンラインで共通。どちらも「見ている人から見た状態（PlayerView）」だけで描画する
   （ホットシートでは手元の完全な状態から `viewFor` で作る）。

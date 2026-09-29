@@ -93,6 +93,34 @@ describe('部屋を作る・参加する', () => {
   })
 })
 
+describe('部屋の状態を読む（state）', () => {
+  it('参加者には部屋・参加者一覧・本人から見た状態が返り、参加していない人には何も返らない', async () => {
+    const s = await startedGame([HOST, B])
+    const mine = await s.call(B, { op: 'state', roomId: s.roomId })
+    expect(mine.ok && mine.snapshot?.room?.status).toBe('playing')
+    expect(mine.ok && mine.snapshot?.seats.map((x) => x.userId)).toEqual([HOST, B])
+    expect(mine.ok && mine.snapshot?.view?.viewer).toBe(1)
+    expect(await s.call(C, { op: 'state', roomId: s.roomId })).toEqual({
+      ok: true,
+      snapshot: { room: null, seats: [], view: null },
+    })
+  })
+
+  it('状態が変わる操作が成功したときだけ、部屋に通知する', async () => {
+    const store = new MemoryStore()
+    const notified: string[] = []
+    const call = (user: string, req: ServerRequest) =>
+      handleRequest(store, user, req, seededRng(1), { notify: async (room) => void notified.push(room) })
+    const created = await call(HOST, { op: 'create', name: 'H' })
+    const roomId = created.ok ? created.roomId! : ''
+    await call(B, { op: 'join', roomId, name: 'B' })
+    await call(B, { op: 'state', roomId })
+    await call(B, { op: 'start', roomId, board: 'random' }) // ホストではないので失敗
+    await call(HOST, { op: 'start', roomId, board: 'random' })
+    expect(notified).toEqual([roomId, roomId])
+  })
+})
+
 describe('ゲーム開始', () => {
   it('ホストだけが、2人以上そろってから始められる', async () => {
     const solo = await roomWith([HOST])
@@ -117,7 +145,7 @@ describe('ゲーム開始', () => {
     expect(game.state.players.map((p) => p.name)).toEqual(['ホスト', B, C])
     expect(game.version).toBe(1)
     for (const [p, user] of [HOST, B, C].entries()) {
-      const view = store.getView(roomId, user)!
+      const view = (await store.getView(roomId, user))!
       expect(view.viewer).toBe(p)
       expect('devDeck' in view).toBe(false)
       expect(view.players.filter((x) => x.resources !== null)).toHaveLength(1)
@@ -152,7 +180,7 @@ describe('ゲーム中の操作', () => {
     const game = (await s.store.loadGame(s.roomId))!
     expect(game.version).toBe(2)
     expect(game.state.buildings[vertex]).not.toBeNull()
-    for (const user of [HOST, B]) expect(s.store.getView(s.roomId, user)!.buildings[vertex]).not.toBeNull()
+    for (const user of [HOST, B]) expect((await s.store.getView(s.roomId, user))!.buildings[vertex]).not.toBeNull()
   })
 
   it('不正な操作・手番でない人・参加していない人は弾かれ、保存されない', async () => {
@@ -183,8 +211,8 @@ describe('ゲーム中の操作', () => {
     // 手札を持たせた状態で保存し直し、1手進める
     await s.store.saveGame(s.roomId, game.version, game, [])
     await placeSetup(s)
-    const hostView = s.store.getView(s.roomId, HOST)!
-    const bView = s.store.getView(s.roomId, B)!
+    const hostView = (await s.store.getView(s.roomId, HOST))!
+    const bView = (await s.store.getView(s.roomId, B))!
     expect(hostView.players[0].resources).toEqual(counts({ ore: 3 }))
     expect(hostView.players[1].resources).toBeNull()
     expect(hostView.players[1].resourceCount).toBe(2)
@@ -246,7 +274,7 @@ describe('ゲーム中の操作', () => {
     )
     expect((await s.store.getRoom(s.roomId))!.status).toBe('finished')
     // 終了後は全員に全員の手札が公開される
-    expect(s.store.getView(s.roomId, B)!.players[0].devCards).toHaveLength(10)
+    expect((await s.store.getView(s.roomId, B))!.players[0].devCards).toHaveLength(10)
   })
 
   it('初期配置の道まで通しで進められる', async () => {

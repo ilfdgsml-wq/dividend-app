@@ -1,7 +1,7 @@
-// Supabase への保存（本番用）。Secret key で接続するので RLS を通らない。テーブルは supabase/schema.sql を参照。
+// Supabase への保存（本番用。Edge Function から、サーバー用の鍵で接続する）。テーブルは supabase/schema.sql を参照。
 
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { BoardType, GameState } from '../src/logic/index.ts'
+import type { BoardType, GameState, PlayerView } from '../src/logic/index.ts'
 import type { RoomInfo, RoomStatus, SeatInfo } from '../src/online/protocol.ts'
 import type { GameStore } from './store.ts'
 
@@ -84,6 +84,17 @@ export function supabaseStore(db: SupabaseClient): GameStore {
         .maybeSingle()
       check(error, 'loadGame')
       return data ? { state: data.state as GameState, version: data.version, playerIds: data.player_ids } : null
+    },
+
+    async getView(roomId, userId) {
+      const { data, error } = await db
+        .from('player_views')
+        .select('view')
+        .eq('room_id', roomId)
+        .eq('user_id', userId)
+        .maybeSingle()
+      check(error, 'getView')
+      return (data?.view as PlayerView | undefined) ?? null
     },
 
     async saveGame(roomId, expectedVersion, game, views) {

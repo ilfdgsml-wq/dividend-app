@@ -44,14 +44,40 @@ function isBoardType(b: unknown): b is BoardType {
   return b === 'random' || b === 'beginner'
 }
 
-export async function handleRequest(store: GameStore, userId: string, raw: unknown, rng: Rng): Promise<ServerResponse> {
+export interface HandlerOptions {
+  /** 部屋の状態が変わったことを参加者に知らせる（本番は Supabase Realtime の Broadcast） */
+  notify?: (roomId: string) => Promise<void>
+}
+
+/** 成功したら部屋の状態が変わる操作 */
+const CHANGES_ROOM = new Set<string>(['join', 'leave', 'start', 'action'])
+
+export async function handleRequest(
+  store: GameStore,
+  userId: string,
+  raw: unknown,
+  rng: Rng,
+  options: HandlerOptions = {},
+): Promise<ServerResponse> {
   if (typeof raw !== 'object' || raw === null) return fail('リクエストの形式が正しくありません')
   const req = raw as ServerRequest
+  const result = await dispatch(store, userId, req, rng)
+  // 通知の失敗は操作の結果に影響させない（参加者の画面は定期的な読み直しでも追いつく）
+  const roomId = (req as { roomId?: unknown }).roomId
+  if (result.ok && options.notify && CHANGES_ROOM.has(req.op) && isRoomCode(roomId)) {
+    await options.notify(roomId).catch(() => {})
+  }
+  return result
+}
+
+async function dispatch(store: GameStore, userId: string, req: ServerRequest, rng: Rng): Promise<ServerResponse> {
   switch (req.op) {
     case 'create':
       return createRoom(store, userId, req.name, rng)
     case 'peek':
       return peekRoom(store, userId, req.roomId)
+    case 'state':
+      return roomState(store, userId, req.roomId)
     case 'join':
       return joinRoom(store, userId, req.roomId, req.name)
     case 'leave':
@@ -95,6 +121,16 @@ async function peekRoom(store: GameStore, userId: string, roomId: unknown): Prom
       isMember: seats.some((s) => s.userId === userId),
     },
   }
+}
+
+/** 参加者にだけ、部屋・参加者一覧・本人から見た状態を返す */
+async function roomState(store: GameStore, userId: string, roomId: unknown): Promise<ServerResponse> {
+  const room = await loadRoom(store, roomId)
+  const seats = room ? await store.listSeats(room.id) : []
+  if (!room || !seats.some((s) => s.userId === userId)) {
+    return { ok: true, snapshot: { room: null, seats: [], view: null } }
+  }
+  return { ok: true, roomId: room.id, snapshot: { room, seats, view: await store.getView(room.id, userId) } }
 }
 
 async function joinRoom(store: GameStore, userId: string, roomId: unknown, rawName: unknown): Promise<ServerResponse> {

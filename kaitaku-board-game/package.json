@@ -5,15 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build && vite build -c vite.api.config.ts",
+    "build": "tsc -b && vite build && vite build -c vite.edge.config.ts",
     "preview": "vite preview",
     "lint": "eslint .",
     "typecheck": "tsc -b",
     "test": "vitest run",
     "test:watch": "vitest",
     "format": "prettier --write src",
-    "build:api": "vite build -c vite.api.config.ts",
-    "dev:mock": "vite --mode mock"
+    "dev:mock": "vite --mode mock",
+    "build:edge": "vite build -c vite.edge.config.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

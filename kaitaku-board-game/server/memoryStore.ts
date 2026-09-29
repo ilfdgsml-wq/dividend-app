@@ -86,7 +86,7 @@ export class MemoryStore implements GameStore {
     return true
   }
 
-  getView(roomId: string, userId: string): PlayerView | null {
+  async getView(roomId: string, userId: string): Promise<PlayerView | null> {
     const view = this.views.get(`${roomId}:${userId}`)
     return view ? structuredClone(view) : null
   }
