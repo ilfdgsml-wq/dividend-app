@@ -48,14 +48,15 @@ export function TradeDialog({
   state: GameState
   dispatch: Dispatch
   onClose: () => void
-  onAskResponder: (p: PlayerId) => void
+  /** ホットシート：その人に端末を渡して答えてもらう。オンラインでは各自の端末で答えるので不要 */
+  onAskResponder?: (p: PlayerId) => void
 }) {
   const me = state.currentPlayer
   const [give, setGive] = useState(counts())
   const [get, setGet] = useState(counts())
   const trade = state.trade
   const confirm = (partner: PlayerId) => {
-    if (dispatch({ type: 'confirmTrade', partner }, me)) onClose()
+    void dispatch({ type: 'confirmTrade', partner }).then((ok) => ok && onClose())
   }
 
   if (!trade) {
@@ -75,7 +76,7 @@ export function TradeDialog({
           <button
             className="primary"
             disabled={!valid(give, get)}
-            onClick={() => dispatch({ type: 'proposeTrade', give, get }, me)}
+            onClick={() => void dispatch({ type: 'proposeTrade', give, get })}
           >
             みんなに提案する
           </button>
@@ -96,13 +97,20 @@ export function TradeDialog({
           return (
             <li key={p} style={{ '--pc': player.color } as CSSProperties}>
               <span className="response-name">{player.name}</span>
-              {res.status === 'pending' && <button onClick={() => onAskResponder(p)}>{player.name}さんが答える</button>}
+              {res.status === 'pending' &&
+                (onAskResponder ? (
+                  <button onClick={() => onAskResponder(p)}>{player.name}さんが答える</button>
+                ) : (
+                  <span className="muted">返答を待っています…</span>
+                ))}
               {res.status === 'rejected' && (
                 <>
                   <span className="muted">断りました</span>
-                  <button className="link" onClick={() => onAskResponder(p)}>
-                    もう一度聞く
-                  </button>
+                  {onAskResponder && (
+                    <button className="link" onClick={() => onAskResponder(p)}>
+                      もう一度聞く
+                    </button>
+                  )}
                 </>
               )}
               {res.status === 'accepted' && (
@@ -125,7 +133,7 @@ export function TradeDialog({
         })}
       </ul>
       <div className="sheet-actions">
-        <button onClick={() => dispatch({ type: 'cancelTrade' }, me)}>提案を取り下げる</button>
+        <button onClick={() => void dispatch({ type: 'cancelTrade' })}>提案を取り下げる</button>
       </div>
     </Sheet>
   )
@@ -137,11 +145,14 @@ export function RespondDialog({
   player,
   dispatch,
   onDone,
+  onClose,
 }: {
   state: GameState
   player: PlayerId
   dispatch: Dispatch
   onDone: () => void
+  /** オンライン：答えずに閉じる（あとで答えられる） */
+  onClose?: () => void
 }) {
   const trade = state.trade!
   const proposer = state.players[state.currentPlayer]
@@ -152,11 +163,11 @@ export function RespondDialog({
   const [myGet, setMyGet] = useState(trade.give)
 
   const respond = (accept: boolean) => {
-    if (dispatch({ type: 'respondTrade', accept }, player)) onDone()
+    void dispatch({ type: 'respondTrade', accept }).then((ok) => ok && onDone())
   }
 
   return (
-    <Sheet title={`${state.players[player].name}さん：交易の提案`}>
+    <Sheet title={`${state.players[player].name}さん：交易の提案`} onClose={onClose}>
       <p>
         {proposer.name}さんからの提案：あなたが渡す <Counts value={trade.get} /> ⇄ あなたがもらう{' '}
         <Counts value={trade.give} />
@@ -186,7 +197,7 @@ export function RespondDialog({
               disabled={!valid(myGive, myGet)}
               onClick={() => {
                 // 手番プレイヤー目線に直して送る
-                if (dispatch({ type: 'counterTrade', give: myGet, get: myGive }, player)) onDone()
+                void dispatch({ type: 'counterTrade', give: myGet, get: myGive }).then((ok) => ok && onDone())
               }}
             >
               対案を出す

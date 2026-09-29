@@ -1,14 +1,24 @@
 import type { CSSProperties } from 'react'
-import { total, victoryPoints, type GameState, type PlayerId } from '../../logic/index.ts'
+import type { PlayerId, PlayerView } from '../../logic/index.ts'
 
-export function PlayerList({ state, viewer }: { state: GameState; viewer: PlayerId | null }) {
-  const over = state.phase.type === 'gameOver'
+/** 全員の公開情報。手札・発展カードは枚数だけ、点数は非公開の勝利点カードを含めない */
+export function PlayerList({
+  view,
+  viewer,
+  you,
+}: {
+  view: PlayerView
+  /** 自分の勝利点カードを「+1」のように表示する人（目隠し中は null） */
+  viewer: PlayerId | null
+  /** オンラインで「あなた」と表示する席 */
+  you?: PlayerId | null
+}) {
+  const over = view.phase.type === 'gameOver'
   return (
     <ul className="players">
-      {state.players.map((p, i) => {
-        const shown = victoryPoints(state, i, over)
-        const hidden = !over && i === viewer ? victoryPoints(state, i, true) - shown : 0
-        const current = i === state.currentPlayer
+      {view.players.map((p, i) => {
+        const hidden = !over && i === viewer ? (p.devCards ?? []).filter((c) => c.type === 'victoryPoint').length : 0
+        const current = i === view.currentPlayer
         return (
           <li
             key={i}
@@ -19,21 +29,22 @@ export function PlayerList({ state, viewer }: { state: GameState; viewer: Player
             <div className="player-name">
               {current && <span className="turn-mark">▶</span>}
               {p.name}
+              {you === i && <small className="you">（あなた）</small>}
             </div>
             <div className="player-points" title="勝利点">
-              {shown}
+              {p.publicPoints}
               {hidden > 0 && <small title="あなたにだけ見える勝利点カード">+{hidden}</small>}
               <small>点</small>
             </div>
             <div className="player-stats">
-              <span title="資源カードの枚数">🃏{total(p.resources)}</span>
-              <span title="発展カードの枚数">📜{p.devCards.length}</span>
+              <span title="資源カードの枚数">🃏{p.resourceCount}</span>
+              <span title="発展カードの枚数">📜{p.devCardCount}</span>
               <span title="使った騎士">⚔️{p.knightsPlayed}</span>
-              <span title="最長の道">🛤️{state.longestRoad.lengths[i] ?? 0}</span>
+              <span title="最長の道">🛤️{view.longestRoad.lengths[i] ?? 0}</span>
             </div>
             <div className="player-badges">
-              {state.longestRoad.holder === i && <span className="badge">最長交易路</span>}
-              {state.largestArmy.holder === i && <span className="badge">最大騎士力</span>}
+              {view.longestRoad.holder === i && <span className="badge">最長交易路</span>}
+              {view.largestArmy.holder === i && <span className="badge">最大騎士力</span>}
             </div>
           </li>
         )

@@ -1,14 +1,14 @@
 import type { CSSProperties } from 'react'
-import { total, type GameState, type PlayerId } from '../../logic/index.ts'
+import type { PlayerView, PlayerId } from '../../logic/index.ts'
 import { Sheet } from '../components.tsx'
 import type { Dispatch } from './types.ts'
 
 export function StealDialog({
-  state,
+  view,
   candidates,
   dispatch,
 }: {
-  state: GameState
+  view: PlayerView
   candidates: PlayerId[]
   dispatch: Dispatch
 }) {
@@ -20,11 +20,11 @@ export function StealDialog({
           <button
             key={p}
             className="player-choice"
-            style={{ '--pc': state.players[p].color } as CSSProperties}
-            onClick={() => dispatch({ type: 'steal', target: p }, state.currentPlayer)}
+            style={{ '--pc': view.players[p].color } as CSSProperties}
+            onClick={() => void dispatch({ type: 'steal', target: p })}
           >
-            {state.players[p].name}
-            <small>手札 {total(state.players[p].resources)}枚</small>
+            {view.players[p].name}
+            <small>手札 {view.players[p].resourceCount}枚</small>
           </button>
         ))}
       </div>

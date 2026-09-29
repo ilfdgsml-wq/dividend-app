@@ -1,8 +1,8 @@
-// 非公開情報を伏せた「そのプレイヤーから見た状態」。フェーズ2でサーバーから配る形。
+// 非公開情報を伏せた「そのプレイヤーから見た状態」。オンライン対戦ではサーバーがこれを各プレイヤーに配る。
 
-import { total } from './resources.ts'
+import { counts, total } from './resources.ts'
 import { victoryPoints } from './rules/victory.ts'
-import type { DevCard, GameState, LogEntry, PlayerId, ResourceCounts } from './types.ts'
+import type { DevCard, DevCardType, GameState, LogEntry, PlayerId, ResourceCounts } from './types.ts'
 
 export interface PublicPlayer {
   name: string
@@ -21,12 +21,20 @@ export interface PlayerView extends Omit<GameState, 'players' | 'devDeck'> {
   viewer: PlayerId | null
   players: PublicPlayer[]
   devDeckCount: number
+  /** log[0] が元のログの何番目か（古いログを省いたとき 0 より大きくなる） */
+  logStart: number
+}
+
+export interface ViewOptions {
+  /** 新しい方からこの件数だけログを残す（通信量を抑えるため） */
+  maxLog?: number
 }
 
 /** viewer = null は観戦者（誰の手札も見えない） */
-export function viewFor(state: GameState, viewer: PlayerId | null): PlayerView {
+export function viewFor(state: GameState, viewer: PlayerId | null, options: ViewOptions = {}): PlayerView {
   const reveal = state.phase.type === 'gameOver'
   const { devDeck, players, log, ...rest } = state
+  const logStart = options.maxLog !== undefined ? Math.max(0, log.length - options.maxLog) : 0
   return {
     ...structuredClone(rest),
     viewer,
@@ -44,13 +52,35 @@ export function viewFor(state: GameState, viewer: PlayerId | null): PlayerView {
         devCards: visible ? p.devCards.map((c) => ({ ...c })) : null,
       }
     }),
-    log: log.map((e): LogEntry => redact(e, viewer)),
+    logStart,
+    log: log.slice(logStart).map((e): LogEntry => redact(e, viewer)),
   }
 }
 
 function redact(entry: LogEntry, viewer: PlayerId | null): LogEntry {
   if (entry.kind === 'steal' && (viewer === null || !entry.visibleTo.includes(viewer))) {
-    return { ...entry, resource: null }
+    return { ...entry, resource: null, visibleTo: [...entry.visibleTo] }
   }
   return structuredClone(entry)
+}
+
+/**
+ * 見えている情報から、盤面の判定（置ける場所・交換レート・発展カードの使用可否など）に使える
+ * GameState の形を作る。見えない手札は空、山札は枚数だけ合わせた仮の中身になるので、
+ * 他人の手札の枚数や点数は PlayerView の方を使うこと。
+ */
+export function viewToState(view: PlayerView): GameState {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { players, devDeckCount, viewer, logStart, ...rest } = view
+  return {
+    ...structuredClone(rest),
+    devDeck: Array<DevCardType>(devDeckCount).fill('knight'),
+    players: players.map((p) => ({
+      name: p.name,
+      color: p.color,
+      resources: p.resources ? { ...p.resources } : counts(),
+      devCards: p.devCards ? p.devCards.map((c) => ({ ...c })) : [],
+      knightsPlayed: p.knightsPlayed,
+    })),
+  }
 }

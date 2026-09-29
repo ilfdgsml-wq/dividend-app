@@ -81,8 +81,6 @@ export function portLabel(kind: PortKind): string {
   return kind === 'any' ? '3:1' : `${RESOURCE_EMOJI[kind]}2:1`
 }
 
-export const PLAYER_COLORS = ['#e53935', '#1e88e5', '#fb8c00', '#8e24aa']
-
 /** 資源の組み合わせを「🌲2 🧱1」のように */
 export function formatCounts(c: ResourceCounts): string {
   const parts = RESOURCES.filter((r) => c[r] > 0).map((r) => `${RESOURCE_EMOJI[r]}${c[r]}`)
@@ -123,9 +121,11 @@ export function formatLog(entry: LogEntry, state: GameState, viewer: PlayerId | 
     case 'robber':
       return `${name(entry.player)}さんが盗賊を移動しました`
     case 'steal': {
-      const seen = viewer !== null && entry.visibleTo.includes(viewer)
-      if (entry.resource === null) return `${name(entry.player)}さんは${name(entry.target)}さんから何も奪えませんでした`
-      const what = seen ? `${RESOURCE_EMOJI[entry.resource]}${RESOURCE_LABEL[entry.resource]}を` : ''
+      // stolen が無いのは旧形式の保存データ
+      const stolen = entry.stolen ?? entry.resource !== null
+      if (!stolen) return `${name(entry.player)}さんは${name(entry.target)}さんから何も奪えませんでした`
+      const seen = entry.resource !== null && viewer !== null && entry.visibleTo.includes(viewer)
+      const what = seen && entry.resource ? `${RESOURCE_EMOJI[entry.resource]}${RESOURCE_LABEL[entry.resource]}を` : ''
       return `${name(entry.player)}さんが${name(entry.target)}さんから${what}1枚奪いました`
     }
     case 'build': {

@@ -1,10 +1,11 @@
 import type { GameState, PlayerId } from '../../logic/index.ts'
 import { formatLog } from '../labels.ts'
 
-export function LogPanel({ state, viewer }: { state: GameState; viewer: PlayerId | null }) {
+/** logStart = state.log[0] が元のログの何番目か（オンラインでは古いログが省かれる） */
+export function LogPanel({ state, logStart, viewer }: { state: GameState; logStart: number; viewer: PlayerId | null }) {
   const lines = state.log
-    .map((entry, i) => ({ i, text: formatLog(entry, state, viewer) }))
-    .filter((l): l is { i: number; text: string } => l.text !== null)
+    .map((entry, i) => ({ key: logStart + i, text: formatLog(entry, state, viewer) }))
+    .filter((l): l is { key: number; text: string } => l.text !== null)
     .slice(-80)
     .reverse()
   return (
@@ -12,7 +13,7 @@ export function LogPanel({ state, viewer }: { state: GameState; viewer: PlayerId
       <summary>ログ</summary>
       <ol>
         {lines.map((l) => (
-          <li key={l.i}>{l.text}</li>
+          <li key={l.key}>{l.text}</li>
         ))}
       </ol>
     </details>

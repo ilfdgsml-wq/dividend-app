@@ -61,3 +61,6 @@ export function pips(n: number): number {
 }
 
 export const RED_NUMBERS = [6, 8]
+
+/** 席順ごとのプレイヤーの色 */
+export const PLAYER_COLORS = ['#e53935', '#1e88e5', '#fb8c00', '#8e24aa']

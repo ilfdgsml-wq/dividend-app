@@ -2,7 +2,15 @@ import type { CSSProperties } from 'react'
 import { pointBreakdown, victoryPoints, type GameState, type PointBreakdown } from '../../logic/index.ts'
 import { Sheet } from '../components.tsx'
 
-export function GameOverDialog({ state, onNewGame }: { state: GameState; onNewGame: () => void }) {
+export function GameOverDialog({
+  state,
+  exitLabel,
+  onExit,
+}: {
+  state: GameState
+  exitLabel: string
+  onExit: () => void
+}) {
   const ranking = state.players
     .map((p, i) => ({ p, i, points: victoryPoints(state, i, true), b: pointBreakdown(state, i) }))
     .sort((a, b) => b.points - a.points)
@@ -29,8 +37,8 @@ export function GameOverDialog({ state, onNewGame }: { state: GameState; onNewGa
         </tbody>
       </table>
       <div className="sheet-actions">
-        <button className="primary" onClick={onNewGame}>
-          新しいゲーム
+        <button className="primary" onClick={onExit}>
+          {exitLabel}
         </button>
       </div>
     </Sheet>

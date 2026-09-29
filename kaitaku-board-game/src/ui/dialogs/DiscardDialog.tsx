@@ -47,7 +47,7 @@ export function DiscardDialog({
         <button
           className="primary"
           disabled={chosen !== need}
-          onClick={() => dispatch({ type: 'discard', resources: picked }, player)}
+          onClick={() => void dispatch({ type: 'discard', resources: picked })}
         >
           {chosen}/{need}枚を捨てる
         </button>

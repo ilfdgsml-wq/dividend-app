@@ -66,6 +66,13 @@ function stealFrom(state: GameState, thief: PlayerId, target: PlayerId, rng: Rng
   const cards = toCardList(state.players[target].resources)
   const resource = cards.length > 0 ? cards[randomInt(rng, cards.length)] : null
   if (resource) transfer(state.players[target].resources, state.players[thief].resources, counts({ [resource]: 1 }))
-  state.log.push({ kind: 'steal', player: thief, target, resource, visibleTo: [thief, target] })
+  state.log.push({
+    kind: 'steal',
+    player: thief,
+    target,
+    stolen: resource !== null,
+    resource,
+    visibleTo: [thief, target],
+  })
   state.phase = resumePhase(resume)
 }

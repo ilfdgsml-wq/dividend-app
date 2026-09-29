@@ -12,7 +12,7 @@ import { tradeRates } from './rules/ports.ts'
 import { victoryPoints } from './rules/victory.ts'
 import { act, actError, coastalPath, mainPhase, newGame, put, putRoads, setHand, spreadVertices } from './testing.ts'
 import { RESOURCES, type Action, type GameState, type ResourceCounts, type Rng } from './types.ts'
-import { viewFor } from './view.ts'
+import { viewFor, viewToState } from './view.ts'
 
 describe('勝利条件', () => {
   it('自分の手番中に10点以上になった時点で勝利し、以後の操作はできない', () => {
@@ -82,8 +82,36 @@ describe('公開・非公開情報', () => {
     const last = (viewer: number | null) => viewFor(s, viewer).log.at(-1)
     expect(last(0)).toMatchObject({ kind: 'steal', resource: 'brick' })
     expect(last(1)).toMatchObject({ kind: 'steal', resource: 'brick' })
-    expect(last(2)).toMatchObject({ kind: 'steal', resource: null })
-    expect(last(null)).toMatchObject({ kind: 'steal', resource: null })
+    expect(last(2)).toMatchObject({ kind: 'steal', stolen: true, resource: null })
+    expect(last(null)).toMatchObject({ kind: 'steal', stolen: true, resource: null })
+  })
+
+  it('ログは新しい方から指定件数だけ残し、元の位置を logStart で示す', () => {
+    const s = mainPhase()
+    s.log = Array.from({ length: 10 }, (_, i) => ({ kind: 'turnStart' as const, player: 0, turn: i }))
+    const v = viewFor(s, 0, { maxLog: 3 })
+    expect(v.logStart).toBe(7)
+    expect(v.log.map((e) => (e.kind === 'turnStart' ? e.turn : -1))).toEqual([7, 8, 9])
+    expect(viewFor(s, 0).logStart).toBe(0)
+  })
+
+  it('viewToState：本人の手札はそのまま、他人の手札は空。盤面の判定は元の状態と同じ', () => {
+    const s = mainPhase()
+    setHand(s, 0, { wood: 2, brick: 1 })
+    setHand(s, 1, { ore: 3 })
+    s.players[0].devCards = [{ type: 'knight', boughtTurn: 0 }]
+    s.players[1].devCards = [{ type: 'victoryPoint', boughtTurn: 0 }]
+    put(s, 0, 0)
+    putRoads(s, [TOPOLOGY.vertices[0].edges[0]], 0)
+    const pseudo = viewToState(viewFor(s, 0))
+    expect(pseudo.players[0].resources).toEqual(counts({ wood: 2, brick: 1 }))
+    expect(pseudo.players[1].resources).toEqual(counts())
+    expect(pseudo.players[1].devCards).toEqual([])
+    expect(pseudo.devDeck).toHaveLength(s.devDeck.length)
+    expect(legalRoadEdges(pseudo, 0)).toEqual(legalRoadEdges(s, 0))
+    expect(legalSettlementVertices(pseudo, 0, true)).toEqual(legalSettlementVertices(s, 0, true))
+    expect(devCardError(pseudo, 0, 'knight')).toBe(devCardError(s, 0, 'knight'))
+    expect('viewer' in pseudo || 'logStart' in pseudo).toBe(false)
   })
 })
 

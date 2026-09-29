@@ -1,18 +1,23 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { COSTS, PIECE_LIMITS } from '../../logic/index.ts'
 import { Counts, Sheet } from '../components.tsx'
-import type { Settings } from '../storage.ts'
 
-export function MenuDialog({
-  settings,
-  onChangeSettings,
-  onQuit,
-  onClose,
-}: {
-  settings: Settings
-  onChangeSettings: (s: Settings) => void
+export interface QuitOption {
+  label: string
+  /** 確認文 */
+  message: string
   onQuit: () => void
+}
+
+/** children にはモードごとの項目（ホットシートの設定、オンラインの部屋情報など）を入れる */
+export function MenuDialog({
+  quit,
+  onClose,
+  children,
+}: {
+  quit: QuitOption
   onClose: () => void
+  children?: ReactNode
 }) {
   // ブラウザの confirm() は埋め込み表示などで使えないことがあるので、画面内で確認する
   const [confirmQuit, setConfirmQuit] = useState(false)
@@ -55,21 +60,13 @@ export function MenuDialog({
         10点先取。最長交易路（5本以上）と最大騎士力（騎士3枚以上）はそれぞれ2点。7が出たら手札8枚以上の人は半分捨てます。
       </p>
 
-      <h3>設定</h3>
-      <label className="toggle">
-        <input
-          type="checkbox"
-          checked={settings.privacy}
-          onChange={(e) => onChangeSettings({ ...settings, privacy: e.target.checked })}
-        />
-        手番交代時に「端末を渡す」画面を出す（手札を隠す）
-      </label>
+      {children}
 
       {confirmQuit ? (
         <div className="quit-confirm">
-          <p>このゲームを終了してタイトルに戻りますか？進行中のデータは消えます。</p>
+          <p>{quit.message}</p>
           <div className="sheet-actions">
-            <button className="danger" onClick={onQuit}>
+            <button className="danger" onClick={quit.onQuit}>
               終了する
             </button>
             <button onClick={() => setConfirmQuit(false)}>続ける</button>
@@ -78,7 +75,7 @@ export function MenuDialog({
       ) : (
         <div className="sheet-actions">
           <button className="danger" onClick={() => setConfirmQuit(true)}>
-            ゲームをやめる
+            {quit.label}
           </button>
         </div>
       )}

@@ -1,11 +1,19 @@
 import { useState, type CSSProperties } from 'react'
-import { createGame, MAX_PLAYERS, MIN_PLAYERS, type BoardType } from '../logic/index.ts'
-import { PLAYER_COLORS } from './labels.ts'
+import { createGame, MAX_PLAYERS, MIN_PLAYERS, PLAYER_COLORS, type BoardType } from '../logic/index.ts'
+import { OnlineStart } from './online/OnlineStart.tsx'
 import type { SavedGame } from './storage.ts'
 
 const DEFAULT_NAMES = ['あか', 'あお', 'だいだい', 'むらさき']
 
-export function StartScreen({ saved, onStart }: { saved: SavedGame | null; onStart: (game: SavedGame) => void }) {
+export function StartScreen({
+  saved,
+  onStart,
+  onEnterRoom,
+}: {
+  saved: SavedGame | null
+  onStart: (game: SavedGame) => void
+  onEnterRoom: (roomId: string) => void
+}) {
   const [count, setCount] = useState(4)
   const [names, setNames] = useState(DEFAULT_NAMES)
   const [board, setBoard] = useState<BoardType>('random')
@@ -25,12 +33,14 @@ export function StartScreen({ saved, onStart }: { saved: SavedGame | null; onSta
         <span aria-hidden="true">⬢</span> 開拓ボードゲーム
       </h1>
       <p className="muted">
-        1台の端末を回して、{MIN_PLAYERS}〜{MAX_PLAYERS}人で遊べます。10点先取で勝ち。
+        {MIN_PLAYERS}〜{MAX_PLAYERS}人で遊ぶ、資源を集めて開拓するボードゲーム。10点先取で勝ち。
       </p>
+
+      <OnlineStart onEnterRoom={onEnterRoom} />
 
       {saved && saved.state.phase.type !== 'gameOver' && (
         <section className="panel resume">
-          <h2>前回のゲーム</h2>
+          <h2>前回のゲーム（この端末）</h2>
           <p>
             {saved.state.players.map((p) => p.name).join('・')}（{saved.state.turn}手目）
           </p>
@@ -41,7 +51,8 @@ export function StartScreen({ saved, onStart }: { saved: SavedGame | null; onSta
       )}
 
       <section className="panel">
-        <h2>新しいゲーム</h2>
+        <h2>この端末でみんなで遊ぶ</h2>
+        <p className="muted">1台のスマホを順番に回して遊びます。</p>
         <div className="field">
           <span className="field-label">人数</span>
           <div className="segmented">

@@ -98,7 +98,16 @@ export type LogEntry =
   | { kind: 'produce'; gains: ResourceCounts[]; shortage: Resource[] }
   | { kind: 'discard'; player: PlayerId; count: number }
   | { kind: 'robber'; player: PlayerId; hex: HexId }
-  | { kind: 'steal'; player: PlayerId; target: PlayerId; resource: Resource | null; visibleTo: PlayerId[] }
+  | {
+      kind: 'steal'
+      player: PlayerId
+      target: PlayerId
+      /** 1枚奪えたか（公開情報） */
+      stolen: boolean
+      /** 奪った資源。当事者（visibleTo）以外には null に伏せられる */
+      resource: Resource | null
+      visibleTo: PlayerId[]
+    }
   | { kind: 'build'; player: PlayerId; what: 'road' | 'settlement' | 'city'; free?: boolean }
   | { kind: 'buyDev'; player: PlayerId }
   | { kind: 'playDev'; player: PlayerId; card: Exclude<DevCardType, 'victoryPoint'> }

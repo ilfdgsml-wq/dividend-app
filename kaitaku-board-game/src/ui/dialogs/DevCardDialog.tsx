@@ -31,9 +31,9 @@ export function DevCardDialog({
 
   const play = (type: DevCardType) => {
     if (type === 'knight') {
-      if (dispatch({ type: 'playKnight' }, me)) onClose()
+      void dispatch({ type: 'playKnight' }).then((ok) => ok && onClose())
     } else if (type === 'roadBuilding') {
-      if (dispatch({ type: 'playRoadBuilding' }, me)) onClose()
+      void dispatch({ type: 'playRoadBuilding' }).then((ok) => ok && onClose())
     } else if (type === 'yearOfPlenty' || type === 'monopoly') {
       setChoosing(type)
     }
@@ -53,7 +53,9 @@ export function DevCardDialog({
             className="primary"
             disabled={picked.length !== 2}
             onClick={() => {
-              if (dispatch({ type: 'playYearOfPlenty', resources: [picked[0], picked[1]] }, me)) onClose()
+              void dispatch({ type: 'playYearOfPlenty', resources: [picked[0], picked[1]] }).then(
+                (ok) => ok && onClose(),
+              )
             }}
           >
             受け取る
@@ -72,7 +74,7 @@ export function DevCardDialog({
             className="primary"
             disabled={!mono}
             onClick={() => {
-              if (mono && dispatch({ type: 'playMonopoly', resource: mono }, me)) onClose()
+              if (mono) void dispatch({ type: 'playMonopoly', resource: mono }).then((ok) => ok && onClose())
             }}
           >
             全員から集める

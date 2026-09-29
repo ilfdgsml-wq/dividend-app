@@ -23,12 +23,13 @@ export function BankTradeDialog({
   const maxUnits = give && get ? Math.min(Math.floor(hand[give] / rates[give]), state.bank[get]) : 0
   const n = Math.min(units, Math.max(1, maxUnits))
 
-  const submit = () => {
+  const submit = async () => {
     if (!give || !get) return
-    const ok = dispatch(
-      { type: 'bankTrade', give: counts({ [give]: rates[give] * n }), get: counts({ [get]: n }) },
-      player,
-    )
+    const ok = await dispatch({
+      type: 'bankTrade',
+      give: counts({ [give]: rates[give] * n }),
+      get: counts({ [get]: n }),
+    })
     if (ok) {
       setGive(null)
       setGet(null)
@@ -71,7 +72,7 @@ export function BankTradeDialog({
         </div>
       )}
       <div className="sheet-actions">
-        <button className="primary" disabled={!give || !get || maxUnits === 0} onClick={submit}>
+        <button className="primary" disabled={!give || !get || maxUnits === 0} onClick={() => void submit()}>
           交換する
         </button>
       </div>
