@@ -19,7 +19,13 @@ function TermsEditor({
     <div className="terms">
       <div>
         <h3>渡す</h3>
-        <ResourceStepper value={give} onChange={(g) => onChange(g, get)} max={(r) => (get[r] > 0 ? 0 : hand[r])} />
+        <ResourceStepper
+          value={give}
+          onChange={(g) => onChange(g, get)}
+          max={(r) => (get[r] > 0 ? 0 : hand[r])}
+          dim={(r) => hand[r] === 0}
+          note={(r) => `持っている${hand[r]}枚`}
+        />
       </div>
       <div>
         <h3>もらう</h3>

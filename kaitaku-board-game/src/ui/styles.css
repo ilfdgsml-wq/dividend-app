@@ -690,6 +690,25 @@ button.link {
   align-items: center;
   gap: 4px;
 }
+.stepper-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.stepper-note {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+.stepper-note strong {
+  color: var(--ink);
+}
+.stepper-row.dim .stepper-label {
+  opacity: 0.45;
+}
+.discard-summary {
+  margin: 12px 0 0;
+  font-size: 0.95rem;
+}
 .stepper-value {
   text-align: center;
   font-weight: 800;

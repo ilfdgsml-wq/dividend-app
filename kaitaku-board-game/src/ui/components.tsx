@@ -21,22 +21,30 @@ export function Sheet({ title, onClose, children }: { title: string; onClose?: (
   )
 }
 
-/** 資源ごとの枚数を ± で選ぶ */
+/** 資源ごとの枚数を ± で選ぶ。note で各行に補足（手持ちの枚数など）を出せる */
 export function ResourceStepper({
   value,
   onChange,
   max,
+  note,
+  dim,
 }: {
   value: ResourceCounts
   onChange: (next: ResourceCounts) => void
   max: (r: Resource) => number
+  note?: (r: Resource) => ReactNode
+  /** 薄く表示する行（手持ちが0枚の資源など） */
+  dim?: (r: Resource) => boolean
 }) {
   return (
     <div className="stepper">
       {RESOURCES.map((r) => (
-        <div key={r} className="stepper-row">
+        <div key={r} className={dim?.(r) ? 'stepper-row dim' : 'stepper-row'}>
           <span className="stepper-label">
-            {RESOURCE_EMOJI[r]} {RESOURCE_LABEL[r]}
+            <span>
+              {RESOURCE_EMOJI[r]} {RESOURCE_LABEL[r]}
+            </span>
+            {note && <span className="stepper-note">{note(r)}</span>}
           </span>
           <button
             className="step"
