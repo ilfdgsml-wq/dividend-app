@@ -31,6 +31,7 @@
 body {
   margin: 0;
   background: var(--bg);
+  font-size: 16px;
   min-height: 100dvh;
 }
 
@@ -182,7 +183,7 @@ button.link {
   background: var(--accent);
   color: var(--accent-ink);
   position: sticky;
-  top: 0;
+  top: env(safe-area-inset-top, 0px);
   z-index: 5;
 }
 .topbar h1 {
@@ -892,6 +893,15 @@ button.link {
   font-size: 0.92rem;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
   animation: rise 0.18s ease-out;
+}
+.quit-confirm {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--danger);
+  border-radius: 10px;
+}
+.quit-confirm p {
+  margin: 0;
 }
 .toast.error {
   background: var(--danger);

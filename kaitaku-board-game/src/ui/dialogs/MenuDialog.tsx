@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { COSTS, PIECE_LIMITS } from '../../logic/index.ts'
 import { Counts, Sheet } from '../components.tsx'
 import type { Settings } from '../storage.ts'
@@ -13,6 +14,8 @@ export function MenuDialog({
   onQuit: () => void
   onClose: () => void
 }) {
+  // ブラウザの confirm() は埋め込み表示などで使えないことがあるので、画面内で確認する
+  const [confirmQuit, setConfirmQuit] = useState(false)
   return (
     <Sheet title="メニュー" onClose={onClose}>
       <h3>建設コスト</h3>
@@ -62,16 +65,23 @@ export function MenuDialog({
         手番交代時に「端末を渡す」画面を出す（手札を隠す）
       </label>
 
-      <div className="sheet-actions">
-        <button
-          className="danger"
-          onClick={() => {
-            if (window.confirm('このゲームを終了してタイトルに戻りますか？（進行中のデータは消えます）')) onQuit()
-          }}
-        >
-          ゲームをやめる
-        </button>
-      </div>
+      {confirmQuit ? (
+        <div className="quit-confirm">
+          <p>このゲームを終了してタイトルに戻りますか？進行中のデータは消えます。</p>
+          <div className="sheet-actions">
+            <button className="danger" onClick={onQuit}>
+              終了する
+            </button>
+            <button onClick={() => setConfirmQuit(false)}>続ける</button>
+          </div>
+        </div>
+      ) : (
+        <div className="sheet-actions">
+          <button className="danger" onClick={() => setConfirmQuit(true)}>
+            ゲームをやめる
+          </button>
+        </div>
+      )}
     </Sheet>
   )
 }
